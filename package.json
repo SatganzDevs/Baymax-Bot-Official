@@ -1,0 +1,83 @@
+{
+  "name": "Push-Kontak",
+  "version": "1.0.0",
+  "description": "WhatsApp Bot Push Kontak Using Lib Baileys Multi Device",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node main.js"
+  },
+  "keywords": [
+    "termux",
+    "whatsapp-openai",
+    "whatsapp-openai",
+    "whatsapp-bot",
+    "whatsapp-baileys",
+    "baileys-md",
+    "bot-wa",
+    "bot-md",
+    "whatsapp-multi-device",
+    "SatganzDevs",
+    "satganz"
+  ],
+  "base": "https://github.com/resahdevv/Push-Kontak",
+  "author": "SatganzDevs",
+  "license": "MIT",
+  "dependencies": {
+    "@adiwajshing/baileys": "github:XinnChan/baileys",
+    "@adiwajshing/keyed-db": "^0.2.4",
+    "@ffmpeg-installer/ffmpeg": "^1.0.13",
+    "@hapi/boom": "^10.0.0",
+    "@tensorflow/tfjs-node": "^4.10.0",
+    "@whiskeysockets/baileys": "^6.4.0",
+    "awesome-phonenumber": "^2.64.0",
+    "axios": "^1.4.0",
+    "bitly": "^7.1.2",
+    "btch-downloader": "^2.2.0",
+    "canvas": "^2.11.2",
+    "cfonts": "^3.2.0",
+    "chalk": "^4.1.2",
+    "cheerio": "^1.0.0-rc.12",
+    "crypto": "^1.0.1",
+    "express": "^4.18.2",
+    "ffmpeg-static": "^5.1.0",
+    "figlet": "^1.5.2",
+    "file-type": "^16.5.3",
+    "fluent-ffmpeg": "^2.1.2",
+    "fs": "0.0.1-security",
+    "human-readable": "^0.2.1",
+    "jimp": "^0.16.13",
+    "jsdom": "^22.1.0",
+    "lodash": "^4.17.21",
+    "moment-timezone": "^0.5.43",
+    "node-cron": "^3.0.2",
+    "node-fetch": "^2.6.12",
+    "node-webpmux": "^3.1.7",
+    "os": "^0.1.2",
+    "pino": "^7.0.5",
+    "pm2": "^5.3.0",
+    "pngjs": "^7.0.0",
+    "qrcode": "^1.5.3",
+    "qrcode-terminal": "^0.12.0",
+    "request": "^2.88.2",
+    "socket.io": "^4.7.1",
+    "spinnies": "^0.5.1",
+    "stable-diffusion-nodejs": "^1.0.5",
+    "string-similarity": "^4.0.4",
+    "tiktod": "^1.0.0",
+    "util": "^0.12.4",
+    "wa-sticker-formatter": "^4.4.4"
+  },
+  "directories": {
+    "lib": "lib",
+    "src": "src"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/resahdevv/Push-Kontak.git"
+  },
+  "bugs": {
+    "url": "https://github.com/resahdevv/Push-Kontak/issues"
+  },
+  "homepage": "https://github.com/resahdevv/Push-Kontak#readme"
+}

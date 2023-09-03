@@ -1,0 +1,10 @@
+{
+  "name": "baymax-the-helper",
+  "env": {
+    "NODE_ENV": "production",
+    "PORT": 3000
+  },
+  "scripts": {
+    "start": "node main.js"
+  }
+}
