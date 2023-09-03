@@ -1,30 +1,31 @@
 require("./config")
 const express = require('express')
-const http = require("http");
-const socketIO = require("socket.io");
-const app = express();
-const server = http.createServer(app);
-const io = socketIO(server);
-const spin = require('spinnies')
-const CFonts = require('cfonts')
-const moment = require('moment-timezone')
-const {
+const http = require("http")
+const socketIO = require("socket.io")
+const app = express()
+const server = http.createServer(app)
+const io = socketIO(server)
+const { 
   default: SatzganzDevsStart,
-  useMultiFileAuthState,
-  DisconnectReason,
-  fetchLatestBaileysVersion,
-  generateForwardMessageContent,
-  prepareWAMessageMedia,
-  generateWAMessageFromContent,
+  Browsers,
+  useMultiFileAuthState, 
+  DisconnectReason, 
+  fetchLatestBaileysVersion, 
+  generateForwardMessageContent, 
+  prepareWAMessageMedia, 
+  generateWAMessageFromContent, 
   generateMessageID,
-  downloadContentFromMessage,
-  makeInMemoryStore,
-  jidDecode,
-  proto,
-  getAggregateVotesInPollMessage,
-  MessageType,
-  rejectCall
+downloadContentFromMessage, 
+  makeInMemoryStore, 
+  jidDecode, 
+  proto, 
+  getAggregateVotesInPollMessage, 
+  MessageType, 
+  rejectCall,
 } = require("@whiskeysockets/baileys");
+const spin = require('spinnies');
+const CFonts = require('cfonts');
+const moment = require('moment-timezone');
 const pino = require("pino");
 const { Boom } = require("@hapi/boom");
 const fs = require("fs");
@@ -34,7 +35,9 @@ const FileType = require("file-type");
 const chalk = require("chalk");
 const figlet = require("figlet");
 const _ = require("lodash");
-const { smsg } = require('./public/lib/smsg')
+const ejs = require('ejs')
+const cors = require("cors")
+const { smsg } = require('./lib/smsg')
 const PhoneNumber = require("awesome-phonenumber");
 const {
   getAllCmd,
@@ -53,21 +56,31 @@ const {
   getGroupAdmins,
   getRandom,
   generateMessageTag,
-} = require("./public/lib/functional.js");
-const { jadibot } = require('./public/lib/clone')
+} = require("./lib/functional.js");
+const { jadibot } = require('./lib/clone')
 const {
 imageToWebp,
 videoToWebp,
 writeExifImg,
 writeExifVid,
-} = require("./public/lib/exif");
+} = require("./lib/exif");
+const multer = require('multer');
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 const store = makeInMemoryStore({ logger: pino().child({ level: "silent", stream: "store" }) });
 const color = (text, color) => {
   return !color ? chalk.green(text) : chalk.keyword(color)(text);
 };
-const connect = require("./server.js")
-const PORT = process.env.PORT || 3000   
- process.on('uncaughtException', console.error)
+
+app.use(cors())
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+app.get('/', function(req, res) {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+
+
 
 const spinner = { 
   "interval": 120,
@@ -119,7 +132,8 @@ async function connectSmart() {
   const satria = SatzganzDevsStart({
     logger: pino({ level: "silent" }),
     printQRInTerminal: true,
-    browser: ["SatganzDevs (Personal Bot)", "Safari", "1.0.0"],
+    browser: Browsers.macOS('Desktop'),
+    syncFullHistory: true,
       auth: state,
       getMessage: async (key) => {
       if (store) {
@@ -131,31 +145,15 @@ async function connectSmart() {
       };
     },
     });
-   connect(satria, PORT)
+
+
+
+  
   store.bind(satria.ev);
 
-
-    satria.ev.on("call", async (fatihh) => {
-    let botNumber = await satria.decodeJid(satria.user.id);
-    console.log(fatihh);
-    for (let tihh of fatihh) {
-      if (tihh.isGroup == false) {
-        satria.rejectCall(tihh.id, tihh.from)
-          let pa7rick = await satria.sendMessage(
-            tihh.from,
-            {text:`*${satria.user.name}* tidak bisa menerima panggilan ${
-              tihh.isVideo ? `video` : `suara`
-            }. Maaf @${
-              tihh.from.split("@")[0]
-            } kamu akan diblock. Jika tidak sengaja silahkan hubungi Owner untuk dibuka !`, mentions: [tihh.from]});
-          await sleep(8000);
-          await satria.updateBlockStatus(tihh.from, "block");
-      }
-    }
-  });
   
   satria.ev.on("messages.upsert", async (chatUpdate) => {
-   try {
+  try {
       mek = chatUpdate.messages[0];
       if (!mek.message) return;
       mek.message =
@@ -166,14 +164,28 @@ async function connectSmart() {
         return;
       if (mek.key.id.startsWith("BAE5") && mek.key.id.length === 16) return;
       if (mek.key.id.startsWith("FatihArridho_")) return;
-     
       m = smsg(satria, mek, store);
       require("./satganzdevs")(satria, m, chatUpdate, store);
     } catch (err) {
       console.log(err);
     }
   });
+// // Fungsi untuk menangani pesan masuk
+// satria.ev.on('chat.update', async (chatUpdate) => {
+//   if (chatUpdate.messages && chatUpdate.messages.length) {
+//     const message = chatUpdate.messages.all()[0];
+//     console.log(message.messageStubType)
+//     if (message.messageStubType === MessageType.REVOKE) {
+//       // Pesan dihapus, coba mencari pesan yang sesuai dalam cache
+//       const originalMessage = satria.chats.get(message.key.remoteJID).messages.get(message.messageID);
 
+//       if (originalMessage) {
+//         // Pesan ditemukan, kirim ulang pesan tersebut
+//         await satria.sendMessage(message.key.remoteJID, originalMessage, MessageType.extendedText);
+//       }
+//     }
+//   }
+// });
   // respon cmd pollMessage
   async function getMessage(key) {
     if (store) {
@@ -201,7 +213,37 @@ async function connectSmart() {
       }
     }
   });
-  
+    satria.ev.on("call", async (satzzzzz) => {
+    let botNumber = await satria.decodeJid(satria.user.id);
+    console.log(satzzzzz);
+    for (let satY of satzzzzz) {
+        await satria.query(({tag: 'call',
+                             attrs: {
+                from: botNumber,
+                to: satY.from,
+            },
+            content: [{
+                    tag: 'reject',
+                    attrs: {
+                        'call-id': satY.id,
+                        'call-creator': satY.from,
+                        count: '0',
+                    },
+                    content: undefined,
+                }],
+        }));
+      if (satY.isGroup == false) {
+        if (satY.status == "offer") {
+     await satria.sendMessage(satY.from, {text:`*${satria.user.name}* tidak bisa menerima panggilan ${
+              satY.isVideo ? `video` : `suara`
+            }. Maaf @${
+              satY.from.split("@")[0]
+            } kamu akan diblock. Jika tidak sengaja silahkan hubungi Owner untuk dibuka !`, mentions: [satY.from]});
+          await satria.updateBlockStatus(satY.from, "block");
+        }
+      }
+    }
+  });
   // Handle error
   const unhandledRejections = new Map();
   process.on("unhandledRejection", (reason, promise) => {
@@ -236,7 +278,7 @@ async function connectSmart() {
 satria.ev.on("groups.update", async (pea) => {
   try {
     for (let ciko of pea) {
-const fkontak = { key: {participant: `0@s.whatsapp.net`, ...(ciko.id ? { remoteJid: `status@broadcast` } : {}) }, message: { 'contactMessage': { 'displayName': '「 Group Notification 」', 'vcard': `BEGIN:VCARD\nVERSION:3.0\nN:XL;'NOTIFICATION',;;;\nFN:$pushname},\nitem1.TEL;waid=0:0\nitem1.X-ABLabell:Ponsel\nEND:VCARD`, 'jpegThumbnail': fs.readFileSync('./public/src/thumb.jpg'), thumbnail: fs.readFileSync('./public/src/thumb.jpg'), sendEphemeral: true }}}
+const fkontak = { key: {participant: `0@s.whatsapp.net`, ...(ciko.id ? { remoteJid: `status@broadcast` } : {}) }, message: { 'contactMessage': { 'displayName': '「 Group Notification 」', 'vcard': `BEGIN:VCARD\nVERSION:3.0\nN:XL;'NOTIFICATION',;;;\nFN:$pushname},\nitem1.TEL;waid=0:0\nitem1.X-ABLabell:Ponsel\nEND:VCARD`, 'jpegThumbnail': fs.readFileSync('./src/thumb.jpg'), thumbnail: fs.readFileSync('./src/thumb.jpg'), sendEphemeral: true }}}
       // Get Profile Picture Group
       try {
         ppgc = await satria.profilePictureUrl(ciko.id, "image");
@@ -262,82 +304,82 @@ const fkontak = { key: {participant: `0@s.whatsapp.net`, ...(ciko.id ? { remoteJ
 });
 
 
-  // satria.ev.on("group-participants.update", async (anu) => {
-  //   console.log(anu);
-  //   try {
-  //     const fkontak = { key: {participant: `0@s.whatsapp.net`, ...(anu.id ? { remoteJid: `status@broadcast` } : {}) }, message: { 'contactMessage': { 'displayName': '「 Group Update 」', 'vcard': `BEGIN:VCARD\nVERSION:3.0\nN:XL;'NOTIFICATION',;;;\nFN:$pushname},\nitem1.TEL;waid=0:0\nitem1.X-ABLabell:Ponsel\nEND:VCARD`, 'jpegThumbnail': fs.readFileSync('./public/src/thumb.jpg'), thumbnail: fs.readFileSync('./public/src/thumb.jpg'), sendEphemeral: true }}}
-  //     let metadata = await satria.groupMetadata(anu.id);
-  //     let participants = anu.participants;
-  //     for (let num of participants) {
-  //       // Get Profile Picture User
-  //       try {
-  //         ppuser = await satria.profilePictureUrl(num, "image");
-  //       } catch {
-  //         ppuser = "https://tinyurl.com/yx93l6da";
-  //       }
+  satria.ev.on("group-participants.update", async (anu) => {
+    console.log(anu);
+    try {
+      const fkontak = { key: {participant: `0@s.whatsapp.net`, ...(anu.id ? { remoteJid: `status@broadcast` } : {}) }, message: { 'contactMessage': { 'displayName': '「 Group Update 」', 'vcard': `BEGIN:VCARD\nVERSION:3.0\nN:XL;'NOTIFICATION',;;;\nFN:$pushname},\nitem1.TEL;waid=0:0\nitem1.X-ABLabell:Ponsel\nEND:VCARD`, 'jpegThumbnail': fs.readFileSync('./src/thumb.jpg'), thumbnail: fs.readFileSync('./src/thumb.jpg'), sendEphemeral: true }}}
+      let metadata = await satria.groupMetadata(anu.id);
+      let participants = anu.participants;
+      for (let num of participants) {
+        // Get Profile Picture User
+        try {
+          ppuser = await satria.profilePictureUrl(num, "image");
+        } catch {
+          ppuser = "https://tinyurl.com/yx93l6da";
+        }
   
-  //       // Get Profile Picture Group
-  //       try {
-  //         ppgroup = await satria.profilePictureUrl(anu.id, "image");
-  //       } catch {
-  //         ppgroup = "https://tinyurl.com/yx93l6da";
-  //       }
+        // Get Profile Picture Group
+        try {
+          ppgroup = await satria.profilePictureUrl(anu.id, "image");
+        } catch {
+          ppgroup = "https://tinyurl.com/yx93l6da";
+        }
   
-  //       if (anu.action == "add") {
-  //         satria.sendMessage(anu.id, {
-  //           text: `Welcome to ${metadata.subject}! @${num.split("@")[0]}, we are delighted to have you here.`,
-  //           contextInfo: {
-  //             mentionedJid: [num],
-  //             isForwarded: true,
-  //             externalAdReply: {
-  //               title: `「 Welcome Message 」`,
-  //               body: `Powered By ❤️ SatganzDevs`,
-  //               previewType: "PHOTO",
-  //               renderLargerThumbnail: true,
-  //               thumbnail: fs.readFileSync('./public/src/welcome.png'),
-  //               sourceUrl: `https://chat.whatsapp.com/G6W25LQb4Ce2i8r4Z0du1q`,
-  //             },
-  //           },
-  //         },{quoted:fkontak});
-  //       } else if (anu.action == "remove") {
-  //         satria.sendMessage(anu.id, {
-  //           text: `@${num.split("@")[0]} has left the ${metadata.subject}. We'll miss you!`,
-  //           contextInfo: {
-  //             mentionedJid: [num],
-  //             isForwarded: true,
-  //             externalAdReply: {
-  //               title: `「 Goodbye Message 」`,
-  //               body: `Powered By ❤️ SatganzDevs`,
-  //               previewType: "PHOTO",
-  //               mediaType: 1,
-  //               renderLargerThumbnail: true,
-  //               thumbnail: fs.readFileSync('./public/src/goodbye.png'),
-  //               sourceUrl: `https://chat.whatsapp.com/G6W25LQb4Ce2i8r4Z0du1q`,
-  //             },
-  //           },
-  //         },{quoted:fkontak});
-  //       } else if (anu.action == "promote") {
-  //         satria.sendMessage(anu.id, {
-  //           text: `Congratulations, @${num.split("@")[0]}! You have been promoted in ${metadata.subject}. Keep up the good work!`,
-  //           contextInfo: {
-  //             mentionedJid: [num],
-  //             isForwarded: true,
-  //           },
-  //         },{quoted:fkontak});
-  //       } else if (anu.action == "demote") {
-  //         satria.sendMessage(anu.id, {
-  //           text: `@${num.split("@")[0]}, you have been demoted in ${metadata.subject}. Don't worry, keep contributing to the group!`,
-  //           contextInfo: {
-  //             mentionedJid: [num],
-  //             isForwarded: true,
-  //           },
-  //         },{quoted:fkontak});
-  //       }
-  //     }
-  //   } catch (err) {
-  //     console.log(err);
-  //   }
-  // });
+        if (anu.action == "add") {
+          satria.sendMessage(anu.id, {
+            text: `Welcome to ${metadata.subject}! @${num.split("@")[0]}, we are delighted to have you here.`,
+            contextInfo: {
+              mentionedJid: [num],
+              isForwarded: true,
+              externalAdReply: {
+                title: `「 Welcome Message 」`,
+                body: `Powered By ❤️ SatganzDevs`,
+                previewType: "PHOTO",
+                renderLargerThumbnail: true,
+                thumbnail: fs.readFileSync('./src/welcome.png'),
+                sourceUrl: `https://chat.whatsapp.com/G6W25LQb4Ce2i8r4Z0du1q`,
+              },
+            },
+          },{quoted:fkontak});
+        } else if (anu.action == "remove") {
+          satria.sendMessage(anu.id, {
+            text: `@${num.split("@")[0]} has left the ${metadata.subject}. We'll miss you!`,
+            contextInfo: {
+              mentionedJid: [num],
+              isForwarded: true,
+              externalAdReply: {
+                title: `「 Goodbye Message 」`,
+                body: `Powered By ❤️ SatganzDevs`,
+                previewType: "PHOTO",
+                mediaType: 1,
+                renderLargerThumbnail: true,
+                thumbnail: fs.readFileSync('./src/goodbye.png'),
+                sourceUrl: `https://chat.whatsapp.com/G6W25LQb4Ce2i8r4Z0du1q`,
+              },
+            },
+          },{quoted:fkontak});
+        } else if (anu.action == "promote") {
+          satria.sendMessage(anu.id, {
+            text: `Congratulations, @${num.split("@")[0]}! You have been promoted in ${metadata.subject}. Keep up the good work!`,
+            contextInfo: {
+              mentionedJid: [num],
+              isForwarded: true,
+            },
+          },{quoted:fkontak});
+        } else if (anu.action == "demote") {
+          satria.sendMessage(anu.id, {
+            text: `@${num.split("@")[0]}, you have been demoted in ${metadata.subject}. Don't worry, keep contributing to the group!`,
+            contextInfo: {
+              mentionedJid: [num],
+              isForwarded: true,
+            },
+          },{quoted:fkontak});
+        }
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  });
 
 
 
@@ -384,6 +426,7 @@ const fkontak = { key: {participant: `0@s.whatsapp.net`, ...(ciko.id ? { remoteJ
           video: await getBuffer(url),
           caption: caption,
           mimetype: "video/mp4",
+          jpegThumbnail: new Uint8Array(2137),
           ...options,
         },
         { quoted: quoted, ...options }
@@ -462,20 +505,6 @@ const fkontak = { key: {participant: `0@s.whatsapp.net`, ...(ciko.id ? { remoteJ
     return buffer;
   };
   // example satria.sendGroupV4Invite("120363022284397832@g.us", sender, "https://chat.whatsapp.com/DXzNLv2I7mh01ikTbyFXBq", '99999', 'KONTOL', 'JOIN SINI BOSS', thumb)
-     satria.sendGroupV4Invite = async (jid, participant, inviteCode, inviteExpiration, caption = 'Invitation to join my WhatsApp group', options = {}) => {
-                const msg = generateWAMessageFromContent(
-                  participant,
-                  proto.Message.fromObject({
-                    groupInviteMessage: {
-                        inviteCode,
-                        groupJid: jid,
-                        groupName: await satria.getName(jid),
-                        jpegThumbnail: thumb,
-                        caption
-                    }}));
-                await satria.relayMessage(participant, msg.message, { messageId: msg.key.id, additionalAttributes: { ...options } })
-                return msg
-        }
   satria.sendImageAsSticker = async (jid, path, quoted, options = {}) => {
     let buff = Buffer.isBuffer(path)
       ? path
@@ -635,67 +664,7 @@ start(`1`,`Connecting...`)
       return err;
     }
   };
-  satria.sendFileFromUrl = async (jid, url, caption, quoted, options = {}) => {
-    let mime = "";
-    let res = await axios.head(url);
-    mime = res.headers["content-type"];
-    if (mime.split("/")[1] === "gif") {
-      return satria.sendMessage(
-        jid,
-        {
-          video: await getBuffer(url),
-          caption: caption,
-          gifPlayback: true,
-          ...options,
-        },
-        { quoted: quoted, ...options }
-      );
-    }
-    let type = mime.split("/")[0] + "Message";
-    if (mime === "application/pdf") {
-      return satria.sendMessage(
-        jid,
-        {
-          document: await getBuffer(url),
-          mimetype: "application/pdf",
-          caption: caption,
-          ...options,
-        },
-        { quoted: quoted, ...options }
-      );
-    }
-    if (mime.split("/")[0] === "image") {
-      return satria.sendMessage(
-        jid,
-        { image: await getBuffer(url), caption: caption, ...options },
-        { quoted: quoted, ...options }
-      );
-    }
-    if (mime.split("/")[0] === "video") {
-      return satria.sendMessage(
-        jid,
-        {
-          video: await getBuffer(url),
-          caption: caption,
-          mimetype: "video/mp4",
-          ...options,
-        },
-        { quoted: quoted, ...options }
-      );
-    }
-    if (mime.split("/")[0] === "audio") {
-      return satria.sendMessage(
-        jid,
-        {
-          audio: await getBuffer(url),
-          caption: caption,
-          mimetype: "audio/mpeg",
-          ...options,
-        },
-        { quoted: quoted, ...options }
-      );
-    }
-  };
+
   satria.sendImage = async (jid, path, caption = "", quoted = "", options) => {
     let buffer = Buffer.isBuffer(path)
       ? path
@@ -735,12 +704,52 @@ start(`1`,`Connecting...`)
 
 
 
+// satria.sendGroupV4Invite = (jid, participant, inviteCode, inviteExpiration, groupName = 'unknown subject', jpegThumbnail, caption = 'Invitation to join my WhatsApp group', options = {}) => {
+// let msg = generateWAMessageFromContent(
+// participant,
+// proto.Message.fromObject({
+// groupInviteMessage: {
+// inviteCode,
+// inviteExpiration: inviteExpiration ? parseInt(inviteExpiration) : + new Date(new Date + (3 * 86400000)),
+// groupJid: jid,
+// groupName: groupName ? groupName : (await satria.groupMetadata(jid)).subject,
+// jpegThumbnail: jpegThumbnail ? (await getBuffer(jpegThumbnail)).buffer : '',
+// caption
+// },
+// }),{ userJid: participant })
+// return await satria.relayMessage(participant, msg.message, { messageId: msg.key.id })
+// }
 
 
 
+app.post('/sw', upload.single('video'), async (req, res) => {
+  const videoFile = req.file;
 
+  if (!videoFile) {
+    return res.status(400).send('No video file uploaded.');
+  }
 
+  const whatsappNumber = req.body.whatsapp;
 
+  var checkTarget = await satria.onWhatsApp(whatsappNumber + '@s.whatsapp.net');
+
+  if (checkTarget.length === 0) {
+    return res.send('nomor whatsapp tidak valid, contoh nomor valid : 6281316701742');
+  }
+
+  satria.sendMessage(whatsappNumber + '@s.whatsapp.net', { video: videoFile.buffer, caption: 'yah ga hd :(' })
+    .then(async ()  => {
+      res.send('done.')
+      await sleep(3000)
+      res.redirect('/sw')
+    });
+});
+  
+app.get('/sw', async (req, res) => {
+  res.render('index');
+});
+
+  
     satria.copyNForward = async (
     jid,
     message,
@@ -836,7 +845,28 @@ day: 'numeric',
 month: 'long',
 year: 'numeric'
 })
+io.on("connection", (socket) => {
+  console.log("New client connected");
 
+  // Menerima perintah dari website dan mengeksekusinya di terminal
+  socket.on("execute-command", (command) => {
+    console.log(`Received command: ${command}`);
+    exec(command, (error, stdout, stderr) => {
+      const output = stdout || stderr || "No output";
+      console.log(`Output: ${output}`);
+      socket.emit("command-output", output);
+    });
+  });
+
+  socket.on("disconnect", () => {
+    console.log("Client disconnected");
+  });
+});
+
+const PORT = 3000;
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
 connectSmart();
 
 

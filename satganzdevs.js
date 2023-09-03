@@ -2654,11 +2654,6 @@ fs.unwatchFile(file);
 console.log(chalk.blueBright(`Update ${__filename}`));
 delete require.cache[file];
 require(file);
-fs.unwatchFile(file);
-console.log(chalk.blueBright(`Update ${__filename}`));
-delete require.cache[file];
-require(file);
-
 });
 
 
